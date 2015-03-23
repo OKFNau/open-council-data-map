@@ -1,10 +1,4 @@
-
 # Updates dataset counts in Open Council Data map, using CKAN and CartoDB APIs.
-# Result: https://stevage1.cartodb.com/viz/ac41a874-7b34-11e4-ac15-0e4fddd5de28/map
-
-# Dependencies:
-# pip install cartodb ckanapi
-
 
 from cartodb import  CartoDBAPIKey, CartoDBException
 import ckanapi, re
