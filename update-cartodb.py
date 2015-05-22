@@ -1,7 +1,7 @@
 # Updates dataset counts in Open Council Data map, using CKAN and CartoDB APIs.
 
 from cartodb import  CartoDBAPIKey, CartoDBException
-import ckanapi, re
+import ckanapi, re,requests
 
 # You must create settings.py, with your API key and CartoDB subdomain.
 import settings
@@ -21,4 +21,7 @@ for row in orgs:
   print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
   
   cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
+
+melb_datasets = len(requests.get('http://data.melbourne.vic.gov.au/data.json').json()['dataset'])
+cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='http://data.melbourne.vic.gov.au'" % (melb_datasets))
   
