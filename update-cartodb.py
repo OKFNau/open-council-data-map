@@ -1,7 +1,7 @@
 # Updates dataset counts in Open Council Data map, using CKAN and CartoDB APIs.
 
 from cartodb import  CartoDBAPIKey, CartoDBException
-import ckanapi, re
+import ckanapi, re, sqlite3
 
 # You must create settings.py, with your API key and CartoDB subdomain.
 import settings
@@ -12,6 +12,10 @@ datagovau = ckanapi.RemoteCKAN('http://data.gov.au', user_agent='opencouncildata
 
 orgs = cl.sql("select cartodb_id, data_portal_url, datasets from lga_datasets where data_portal='data.gov.au'")['rows']
 
+conn = sqlite3.connect('lgas.db')
+cur = conn.cursor()
+cur.execute('DROP TABLE lga_datasets');
+cur.execute('CREATE TABLE lga_datasets (lga varchar(100), datasets number);')
 for row in orgs:
   org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
 
@@ -21,4 +25,5 @@ for row in orgs:
   print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
   
   cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
+  cur.execute('INSERT lga_datasets (lga, datasets) VALUES(?,?)', (org, num_datasets))
   
