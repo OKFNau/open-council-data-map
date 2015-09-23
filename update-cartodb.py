@@ -46,14 +46,16 @@ for row in orgs:
 
   # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
   num_datasets = datagovau.action.organization_show(id=org, include_datasets=False)['package_count']
-
-  print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
+  try:
+    print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
+  except TypeError:
+    pass
   
-  #cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
+  cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
   updateDatasetCount(org, num_datasets)
   
 melb_datasets = len(requests.get('http://data.melbourne.vic.gov.au/data.json').json()['dataset'])
-#cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='http://data.melbourne.vic.gov.au'" % (melb_datasets))
+cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='http://data.melbourne.vic.gov.au'" % (melb_datasets))
 updateDatasetCount('Melbourne',melb_datasets)
 
 conn.commit()
