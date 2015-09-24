@@ -1,7 +1,7 @@
 ## Open council data map updater
 Updates dataset counts in Open Council Data map, using CKAN and CartoDB APIs.
 
-Result: https://stevage1.cartodb.com/viz/ac41a874-7b34-11e4-ac15-0e4fddd5de28/map
+Result: https://stevage.cartodb.com/viz/43494ef2-61f3-11e5-a667-0e4fddd5de28/public_map
 
 See also: opencouncildata.org
 
