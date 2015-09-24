@@ -6,57 +6,61 @@ import ckanapi, re,requests,sqlite3, csv
 # You must create settings.py, with your API key and CartoDB subdomain.
 import settings
 
+def updateDatasetCount(lga, datasets):
+    cur.execute('INSERT INTO lga_datasets (lga, datasets) VALUES(?,?)', (lga, datasets))
+
+def writeCSV(cur):
+    cur.execute('SELECT * from lga_datasets;')
+    csv_path = "out.csv"
+    with open(csv_path, "wb") as csv_file:
+        csv_writer = csv.writer(csv_file)
+        # Write headers.
+        csv_writer.writerow([i[0] for i in cur.description])
+        # Write data.
+        csv_writer.writerows(cur)
+
+def updateCkanCount(portal, endpoint):
+    orgs = cl.sql("select cartodb_id, data_portal_url, datasets from lga_datasets where data_portal='%s'" % portal)['rows']
+    #print orgs
+    for row in orgs:
+        org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
+        ckan = ckanapi.RemoteCKAN(endpoint, user_agent='opencouncildata.org')
+        ckan.get_only = True
+        # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
+        num_datasets = ckan.action.organization_show(id=org, include_datasets=False)['package_count']
+        try:
+            print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
+        except TypeError:
+            pass      
+        cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
+        updateDatasetCount(org, num_datasets)
+
+def updateSocrataCount(portal_url, city):
+    num_datasets = len(requests.get(portal_url + '/data.json').json()['dataset'])
+    print "%s (%s): %d datasets" % (city, portal_url, num_datasets)
+    cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='%s'" % (num_datasets, portal_url))
+    updateDatasetCount(city,num_datasets)
+
 
 
 cl = CartoDBAPIKey(settings.cartodb_api_key, settings.cartodb_domain)
 
-datagovau = ckanapi.RemoteCKAN('http://data.gov.au', user_agent='opencouncildata.org')
-
-orgs = cl.sql("select cartodb_id, data_portal_url, datasets from lga_datasets where data_portal='data.gov.au'")['rows']
-
 conn = sqlite3.connect('lgas.db')
 cur = conn.cursor()
 try:
-  cur.execute('DROP TABLE lga_datasets');
+    cur.execute('DROP TABLE lga_datasets');
 except:
-  ''
-  # Not a problem.
+    ''
+    # Not a problem.
 cur.execute('CREATE TABLE lga_datasets (lga varchar(100), datasets number);')
-
-
-
-def updateDatasetCount(lga, datasets):
-  cur.execute('INSERT INTO lga_datasets (lga, datasets) VALUES(?,?)', (org, num_datasets))
-
-def writeCSV(cur):
-  cur.execute('SELECT * from lga_datasets;')
-  csv_path = "out.csv"
-  with open(csv_path, "wb") as csv_file:
-    csv_writer = csv.writer(csv_file)
-    # Write headers.
-    csv_writer.writerow([i[0] for i in cur.description])
-    # Write data.
-    csv_writer.writerows(cur)
-
-
-
-
-for row in orgs:
-  org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
-
-  # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
-  num_datasets = datagovau.action.organization_show(id=org, include_datasets=False)['package_count']
-  try:
-    print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
-  except TypeError:
-    pass
-  
-  cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE cartodb_id='%d'" % (num_datasets, row['cartodb_id']))
-  updateDatasetCount(org, num_datasets)
-  
-melb_datasets = len(requests.get('http://data.melbourne.vic.gov.au/data.json').json()['dataset'])
-cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='http://data.melbourne.vic.gov.au'" % (melb_datasets))
-updateDatasetCount('Melbourne',melb_datasets)
+print '*** data.gov.au ***'
+updateCkanCount('data.gov.au', 'http://data.gov.au')
+print '*** data.sa.gov.au ***'
+updateCkanCount('data.sa.gov.au', 'http://data.sa.gov.au/data')
+print '*** Socrata ***'  
+updateSocrataCount('http://data.melbourne.vic.gov.au', 'Melbourne')
+updateSocrataCount('https://data.sunshinecoast.qld.gov.au', 'Sunshine Coast')
+updateSocrataCount('http://mooneevalley.demo.socrata.com', 'Moonee Valley')
 
 conn.commit()
 
