@@ -60,6 +60,7 @@ updateCkanCount('data.sa.gov.au', 'http://data.sa.gov.au/data')
 print '*** Socrata ***'  
 updateSocrataCount('http://data.melbourne.vic.gov.au', 'Melbourne')
 updateSocrataCount('https://data.sunshinecoast.qld.gov.au', 'Sunshine Coast')
+updateSocrataCount('http://data.act.gov.au', 'ACT')
 updateSocrataCount('http://mooneevalley.demo.socrata.com', 'Moonee Valley')
 
 conn.commit()
