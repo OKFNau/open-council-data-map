@@ -19,15 +19,20 @@ def writeCSV(cur):
         # Write data.
         csv_writer.writerows(cur)
 
-def updateCkanCount(portal, endpoint):
+def updateCkanCount(portal, endpoint, orgName=None):
     orgs = cl.sql("select cartodb_id, data_portal_url, datasets from lga_datasets where data_portal='%s'" % portal)['rows']
     #print orgs
     for row in orgs:
-        org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
         ckan = ckanapi.RemoteCKAN(endpoint, user_agent='opencouncildata.org')
         ckan.get_only = True
-        # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
-        num_datasets = ckan.action.organization_show(id=org, include_datasets=False)['package_count']
+        if orgName == None:
+            org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
+            # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
+            num_datasets = ckan.action.organization_show(id=org, include_datasets=False)['package_count']
+        else:
+            
+            num_datasets = len(ckan.action.package_list())
+            org = orgName # Bleh. Just trying to find a way to handle single-organisation CKANs.
         try:
             print "%s: %d (was %d)" % (org, num_datasets, row['datasets'])
         except TypeError:
@@ -53,6 +58,8 @@ except:
     ''
     # Not a problem.
 cur.execute('CREATE TABLE lga_datasets (lga varchar(100), datasets number);')
+print '*** data.brisbane.qld.gov.au ***'
+updateCkanCount('data.brisbane.qld.gov.au', 'http://data.brisbane.qld.gov.au/data', 'Brisbane')
 print '*** data.gov.au ***'
 updateCkanCount('data.gov.au', 'http://data.gov.au')
 print '*** data.sa.gov.au ***'
