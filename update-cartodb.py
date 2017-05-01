@@ -74,6 +74,8 @@ print '*** data.gov.au ***'
 updateCkanCount('data.gov.au', 'http://data.gov.au')
 print '*** data.sa.gov.au ***'
 updateCkanCount('data.sa.gov.au', 'http://data.sa.gov.au/data')
+print '*** data.nsw.gov.au ***'
+updateCkanCount('data.nsw.gov.au', 'http://data.nsw.gov.au/data')
 print '*** Socrata ***'  
 updateSocrataCount('http://data.melbourne.vic.gov.au', 'Melbourne')
 updateSocrataCount('http://data.sunshinecoast.qld.gov.au', 'Sunshine Coast')
