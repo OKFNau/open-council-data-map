@@ -28,7 +28,12 @@ def updateCkanCount(portal, endpoint, orgName=None):
         if orgName == None:
             org = re.search('organization/([^/]+)/?$', row['data_portal_url']).group(1)
             # Warning: data.gov.au only returns first 10 datasets if using include_datasets=True.
-            num_datasets = ckan.action.organization_show(id=org, include_datasets=False)['package_count']
+            try:
+                num_datasets = ckan.action.organization_show(id=org, include_datasets=False)['package_count']
+            except:
+                print "ERROR with organisation %s. Did its endpoint change?" % org
+                num_datasets = 0
+
         else:
             
             num_datasets = len(ckan.action.package_list())
@@ -41,7 +46,11 @@ def updateCkanCount(portal, endpoint, orgName=None):
         updateDatasetCount(org, num_datasets)
 
 def updateSocrataCount(portal_url, city):
-    num_datasets = len(requests.get(portal_url + '/data.json').json()['dataset'])
+    try:
+        num_datasets = len(requests.get(portal_url + '/data.json').json()['dataset'])
+    except:
+        print "ERROR with %s. Maybe an SSL problem?" % city
+        num_datasets = 0
     print "%s (%s): %d datasets" % (city, portal_url, num_datasets)
     cl.sql("UPDATE lga_datasets SET datasets='%d' WHERE data_portal_url='%s'" % (num_datasets, portal_url))
     updateDatasetCount(city,num_datasets)
@@ -58,6 +67,7 @@ except:
     ''
     # Not a problem.
 cur.execute('CREATE TABLE lga_datasets (lga varchar(100), datasets number);')
+
 print '*** data.brisbane.qld.gov.au ***'
 updateCkanCount('data.brisbane.qld.gov.au', 'http://data.brisbane.qld.gov.au/data', 'Brisbane')
 print '*** data.gov.au ***'
@@ -66,9 +76,9 @@ print '*** data.sa.gov.au ***'
 updateCkanCount('data.sa.gov.au', 'http://data.sa.gov.au/data')
 print '*** Socrata ***'  
 updateSocrataCount('http://data.melbourne.vic.gov.au', 'Melbourne')
-updateSocrataCount('https://data.sunshinecoast.qld.gov.au', 'Sunshine Coast')
+updateSocrataCount('http://data.sunshinecoast.qld.gov.au', 'Sunshine Coast')
 updateSocrataCount('http://data.act.gov.au', 'ACT')
-updateSocrataCount('http://mooneevalley.demo.socrata.com', 'Moonee Valley')
+# updateSocrataCount('http://mooneevalley.demo.socrata.com', 'Moonee Valley')
 
 conn.commit()
 
